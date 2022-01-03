@@ -1,0 +1,18 @@
+services:
+  App\Pdf\Generator:
+    public: true
+    autowire: true
+    arguments:
+      - '@knp_snappy.pdf'
+      - '@twig'
+      - '%kernel.project_dir%/public'
+
+  EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator:
+    public: true
+    autowire: true
+
+  App\Tests\Functional\Fixtures\ZendeskWrapper:
+    autowire: true
+    public: true
+
+  App\Zendesk\Wrapper\ZendeskWrapperInterface: '@App\Tests\Functional\Fixtures\ZendeskWrapper'
