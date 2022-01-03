@@ -1,0 +1,149 @@
+{% extends "layouts/page.html.twig" %}
+
+{% block breadcrumb %}
+    {{ include("components/breadcrumb.html.twig", {items: [{route: "cart_index", label: "Panier"}]}) }}
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <section class="section">
+                <h1 class="section-header">
+                    <span class="icon icon-xl icon-cart me-2"></span>
+                    Panier
+                </h1>
+                <div class="section-body">
+                    {% if order.lines|length > 0 %}
+                        <div class="card">
+                            <h2 class="card-header">Liste des produits</h2>
+                            <div class="card-body  p-0">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center">&nbsp;</th>
+                                            <th class="text-center">Produit</th>
+                                            <th class="text-center">Valeur</th>
+                                            <th class="text-center">Quantité</th>
+                                            <th class="text-center">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for line in order.lines %}
+                                        <tr>
+                                            <td class="text-center">
+                                                <a href="{{ path("cart_delete", {id: line.id}) }}" class="btn btn-sm btn-outline-primary">
+                                                    <span class="fas fa-trash"></span>
+                                                    <span class="sr-only">Supprimer</span>
+                                                </a>
+                                            </td>
+                                            <td class="text-center">{{ line.product.name }} - {{ line.product.brand.name }}</td>
+                                            <td class="text-center">{{ line.amount }}</td>
+                                            <td class="text-center">
+                                                <div class="input-group input-group-sm justify-content-center">
+                                                    <a href="{{ path("cart_decrease_quantity", {id: line.id}) }}" class="btn btn-sm btn-outline-primary">
+                                                        <span class="fas fa-minus"></span>
+                                                        <span class="sr-only">Moins</span>
+                                                    </a>
+                                                    <span class="input-group-text bg-white border-top border-bottom">{{ line.quantity }}</span>
+                                                    <a href="{{ path("cart_increase_quantity", {id: line.id}) }}" class="btn btn-sm btn-outline-primary">
+                                                        <span class="fas fa-plus"></span>
+                                                        <span class="sr-only">Plus</span>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">{{ line.total }}</td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td class="text-center" colspan="4">Aucun résultat</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="fw-bold">
+                                            <td class="text-end border-top" colspan="3">Total</td>
+                                            <td class="text-center border-top">{{ order.total }}</td>
+                                        </tr>
+                                        <tr class="fw-bold">
+                                            <td class="text-end border-top" colspan="3">Solde avant commande</td>
+                                            <td class="text-center border-top">{{ app.user.account.balance }}</td>
+                                        </tr>
+                                        <tr class="fw-bold">
+                                            <td class="text-end border-top" colspan="3">Solde après commande</td>
+                                            <td class="text-center border-top">
+                                                {% if app.user.account.balance < order.total %}
+                                                    <span class="fas fa-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Votre solde de clé n'est pas suffisant pour passer commande"></span>
+                                                {% endif %}
+
+                                                {{ app.user.account.balance - order.total }}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        {% if app.user.deliveryAddress is null %}
+                            <div class="card mt-4">
+                                <div class="card-body">
+                                    <div class="alert alert-info mb-0">
+                                        Attention, vous n'avez renseigné aucune adresse de livraison.
+                                        Cliquez <a href="{{ path("address_create", {type: 'delivery'}) }}" class="fw-bold">ici</a> pour en créer une !
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if workflow_can(order, 'valid_cart') %}
+                            {{ form_start(form) }}
+                            <div class="card mt-4">
+                                <h2 class="card-header">Valider votre commande</h2>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        En validant votre commande, vous serez débité de {{ order.total }} clés.
+                                    </div>
+                                    {% if form.deliveryAddress is defined %}
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <div class="form-group">
+                                                    {{ form_label(form.deliveryAddress) }}
+                                                    {{ form_widget(form.deliveryAddress) }}
+                                                    <div class="form-text">Cliquez <a href="{{ path('address_create', {type: 'delivery'}) }}">ici</a> si vous souhaitez ajouter une nouvelle adresse de livraison.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <label class="fw-bold">Adresse de livraison :</label>
+                                                <br/>
+                                                {{ order.deliveryAddress.fullName }}
+                                                {% if order.deliveryAddress.professional %}
+                                                    <br/>
+                                                    {{ order.deliveryAddress.companyName }}
+                                                {% endif %}
+                                                <br/>
+                                                {{ order.deliveryAddress.streetAddress }}
+                                                {% if order.deliveryAddress.restAddress is not null and order.deliveryAddress.restAddress is not empty %}
+                                                    <br/>{{ order.deliveryAddress.restAddress }}
+                                                {% endif %}
+                                                <br/>{{ order.deliveryAddress.zipCode }} - {{ order.deliveryAddress.locality }}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer text-end p-0">
+                                    <button type="submit" class="btn d-block w-100 btn-outline-success rounded-0 border-0">Commander</button>
+                                </div>
+                            </div>
+                            {{ form_end(form) }}
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info text-center mb-0">
+                            Votre panier est vide.
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+    </div>
+{% endblock %}
+
